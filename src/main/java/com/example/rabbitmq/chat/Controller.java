@@ -15,7 +15,9 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "https://agende-express-front.herokuapp.com")
 public class Controller {
 
 	private List<String> msgs = new ArrayList<>();
@@ -35,7 +37,7 @@ public class Controller {
         
 //        connectionFactory.setPort(5672);
 
-        String NOME_FILA = "filaOla";
+        String NOME_FILA = "FilaChatAgendeExpress";
         try(
             //criacao de uma coneccao
             Connection connection = connectionFactory.newConnection();
@@ -46,17 +48,15 @@ public class Controller {
             //Declaracao da fila. Se nao existir ainda no queue manager, serah criada. Se jah existir, e foi criada com
             // os mesmos parametros, pega a referencia da fila. Se foi criada com parametros diferentes, lanca excecao
             channel.queueDeclare(NOME_FILA, false, false, false, null);
-            String mensagem = "Olá mundo!";
             //publica uma mensagem na fila
             channel.basicPublish("", NOME_FILA, null, msg.getBytes());
-            System.out.println("Enviei mensagem: " + msg);
         }
 	}
 	
 
 	@GetMapping(value = "/armazenar")
 	public void armazenarMsg() throws Exception{
-		 String NOME_FILA = "filaOla";
+		 String NOME_FILA = "FilaChatAgendeExpress";
 
 	        //criando a fabrica de conexoes e criando uma conexao
 	        ConnectionFactory connectionFactory = new ConnectionFactory();
@@ -75,8 +75,7 @@ public class Controller {
 	        //Definindo a funcao callback
 	        DeliverCallback callback = (consumerTag, delivery) -> {
 	            String mensagem = new String(delivery.getBody());
-	        	this.x(mensagem);
-	            System.out.println("Recebi a mensagem: " + mensagem);
+	            this.addMsgLista(mensagem);
 	           
 	        };
 
@@ -89,18 +88,25 @@ public class Controller {
 	        	
 	        });
 	        
-	        System.out.println("Continuarei executando outras atividades enquanto não chega mensagem...");
+	        //Servidor continua executando
 	};
 	
 	@GetMapping(value = "/receber")
-	public List<String> receber() {
-		return this.msgs;
+	public List<String> receber(@RequestParam Long empresaId) {
+		List<String> x = new ArrayList<>();
+		for (String msg : this.msgs) {
+			if (msg.split("/")[1].equals(empresaId.toString())) {
+				
+				System.out.println(msg.split("/")[1]);
+				x.add(msg);
+			}
+		}
+		
+		return x;
 	};
 	
 	
-	public void x (String x) {
-		this.msgs.add(x);
-		System.out.println(this.msgs);
-		System.out.println("msg adicionada");
+	public void addMsgLista (String msg) {
+		this.msgs.add(msg);
 	}
 }
